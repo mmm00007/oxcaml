@@ -38,6 +38,10 @@ module Problem : sig
       final_typing_env : ('f, typing_env) With_types.t;
       module_symbol : ('f, Symbol.t) With_types.t
     }
+
+  val ids_for_export : [`Without_types] t -> Ids_for_export.t
+
+  val apply_renaming : [`Without_types] t -> Renaming.t -> [`Without_types] t
 end
 
 module Skeleton : sig
@@ -51,6 +55,10 @@ module Skeleton : sig
       continuation_info : Traverse_acc.continuation_info Continuation.Map.t;
       metadata : Flambda_unit.Metadata.t
     }
+
+  val ids_for_export : t -> Ids_for_export.t
+
+  val apply_renaming : t -> Renaming.t -> t
 end
 
 val run :

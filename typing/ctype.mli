@@ -336,6 +336,31 @@ val try_expand_safe_opt: Env.t -> type_expr -> type_expr
 val expand_head_once: Env.t -> type_expr -> type_expr
 val expand_head: Env.t -> type_expr -> type_expr
 
+(** [upon env ty ~run ~default] adds [run shape] to {!scheduler} once [ty]'s
+    head is determined, where [shape] is [Some] of the head's shape, or [None]
+    if [ty]'s head already has no shape when [upon] is called (e.g. a locally
+    abstract type). If instead [ty] is defaulted, or is later unified with a
+    type with no shape, [default ()] is added. Both run at the levels and in
+    the monitor (see {!Scheduler.Monitor}) current when [upon] was called, and
+    may run before [upon] returns, depending on the scheduling policy (see
+    {!Scheduler}).
+
+    If [-extension omnidirectionality] is enabled, a [Tvar] head becomes a
+    [Tivar]; [run] or [default] waits for a [Tivar] head, whether or not the
+    extension is enabled. Before [default] runs, [ty] is turned back into a
+    [Tvar] if it is still the [Tivar] for that ivar (it may since have been
+    linked to another type, or given a different ivar). If the extension is
+    disabled, a [Tvar] head's [default] is added to {!scheduler} straight
+    away.
+
+    [ty] must not be generic. *)
+val upon :
+  Env.t ->
+  type_expr ->
+  run:(type_shape option -> unit) ->
+  default:(unit -> unit) ->
+  unit
+
 (** [upon_shape env ty ~run ~default] adds [run shape] to {!scheduler}
     once [ty]'s head has a shape, or [run (default ())] if it is defaulted
     first. [run] runs at the levels current when [upon_shape] was called.
@@ -532,12 +557,18 @@ val match_class_declarations:
         (* Check if the first class type is more general than the second. *)
 
 val enlarge_type: Env.t -> type_expr -> type_expr * bool
-        (* Make a type larger, flag is true if some pruning had to be done *)
+        (* Make a type larger, flag is true if some pruning had to be done.
+           A mode crossing delayed by omnidirectionality may raise [Subtype]
+           later, in the monitor current when [enlarge_type] is called (see
+           [Scheduler.Monitor]). *)
 val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must
            enforce and returns a function that enforces this
-           constraints. *)
+           constraints. As for [enlarge_type], [Subtype] may also be raised
+           later, in the monitor current when [subtype] is called; this
+           includes failures triggered while calling the returned
+           function. *)
 
 (* This module allows a type to become "rigid": after unifying such a type,
    we can check to see whether any of its variables were unified, issuing
@@ -908,39 +939,39 @@ val crossing_of_ty :
   Types.type_expr ->
   Mode.Crossing.t
 
+(** Raised when a delayed [cross_left] or [cross_right] fails. *)
+exception Crossing_failed of Mode.With_regionality.error
+
 (** Cross a right mode according to a type wrapped in modalities. Non-principal
-    types don't cross. *)
+    types don't cross, except under [-extension omnidirectionality] and
+    [-ikinds], where principality is not checked.
+
+    Under [-extension omnidirectionality] and [-ikinds], the crossing is delayed
+    if it depends on unsolved type variables. Then [cross_right] returns a fresh
+    mode [m] and checks [m <= cross mode] once the crossing is known, raising
+    [Crossing_failed] if that fails. That check may run after [cross_right]
+    returns, but runs in the monitor current when [cross_right] is called (see
+    [Scheduler.Monitor]), so callers should convert [Crossing_failed] into
+    their own error with [Scheduler.Monitor.try_] rather than [try ... with].
+    [pp] is passed to the [submode] for that check. *)
 val cross_right :
   Env.t ->
   ?modalities:Mode.Modality.Const.t ->
+  ?pp:Mode_hint.pinpoint ->
   Types.type_expr ->
   Mode.With_regionality.r ->
   Mode.With_regionality.r
 
-(** Cross a left mode according to a type wrapped in modalities. Non-principal
-    types don't cross. *)
+(** Cross a left mode according to a type wrapped in modalities. Principality
+    and delayed crossings are as for [cross_right]; a delayed crossing returns
+    a fresh [m] and checks [cross mode <= m]. *)
 val cross_left :
   Env.t ->
   ?modalities:Mode.Modality.Const.t ->
+  ?pp:Mode_hint.pinpoint ->
   Types.type_expr ->
   Mode.With_regionality.l ->
   Mode.With_regionality.l
-
-(** Similar to [cross_right] but for [Mode.With_locality]  *)
-val cross_right_with_locality :
-  Env.t ->
-  ?modalities:Mode.Modality.Const.t ->
-  Types.type_expr ->
-  Mode.With_locality.r ->
-  Mode.With_locality.r
-
-(** Similar to [cross_left] but for [Mode.With_locality]  *)
-val cross_left_with_locality :
-  Env.t ->
-  ?modalities:Mode.Modality.Const.t ->
-  Types.type_expr ->
-  Mode.With_locality.l ->
-  Mode.With_locality.l
 
 (** Zap a modality to floor if the [modes] extension is enabled at a level more
     immature than the given one. Zap to id otherwise. *)

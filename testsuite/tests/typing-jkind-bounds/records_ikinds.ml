@@ -993,10 +993,8 @@ type ('a : immutable_data) t = 'a list
 (***************************************************)
 (* Unboxed versions of records with mutable fields *)
 
-(* Unboxed record labels can't be mutated in place, so [mutable] fields cross
-   just like immutable ones.
-
-   CR box: limit this crossing to give [box] a better kind. *)
+(* A mutable field restricts only contention and visibility: joining
+   [immutable_data] with the kind of [t#] gives the kind of [t]. *)
 type t = { mutable x : int; y : int }
 [%%expect {|
 type t = { mutable x : int; y : int; }
@@ -1013,34 +1011,53 @@ val f : t# -> t# @ unique = <fun>
 type k = t#
 |}]
 
-(* CR box: Mutable and immutable boxed records differ in contention and
-   visibility. To give [box] a better kind, the same differences should apply to
-   the unboxed versions, causing the tests below to be rejected. *)
+(* Like mutable boxed records, they don't cross contention or visibility. *)
 let f (x : t# @ contended) : t# @ uncontended = x
 [%%expect {|
-val f : t# @ contended -> t# = <fun>
+Line 1, characters 48-49:
+1 | let f (x : t# @ contended) : t# @ uncontended = x
+                                                    ^
+Error: This value is "contended" but is expected to be "uncontended".
 |}]
 
 let f (x : t# @ immutable) : t# @ read_write = x
 [%%expect {|
-val f : t# @ immutable -> t# = <fun>
+Line 1, characters 47-48:
+1 | let f (x : t# @ immutable) : t# @ read_write = x
+                                                   ^
+Error: This value is "immutable" but is expected to be "read_write".
 |}]
 
 type k : immutable_data & immutable_data = t#
 [%%expect {|
-type k = t#
+Line 1, characters 0-45:
+1 | type k : immutable_data & immutable_data = t#
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The kind of type "t#" is
+           mutable_data non_pointer mod global unforkable yielding
+           & mutable_data non_pointer mod global unforkable yielding
+         because it is an unboxed record.
+       But the kind of type "t#" must be a subkind of
+           immutable_data & immutable_data
+         because of the definition of k at line 1, characters 0-45.
 |}]
 
 type singleton = { mutable x : int }
 let f (x : singleton# @ contended) = use_uncontended x
 [%%expect {|
 type singleton = { mutable x : int; }
-val f : singleton# @ contended -> unit = <fun>
+Line 2, characters 53-54:
+2 | let f (x : singleton# @ contended) = use_uncontended x
+                                                         ^
+Error: This value is "contended" but is expected to be "uncontended".
 |}]
 
 type nested_singleton = #{ inner : singleton# }
 let f (x : nested_singleton @ contended) = use_uncontended x
 [%%expect {|
 type nested_singleton = #{ inner : singleton#; }
-val f : nested_singleton @ contended -> unit = <fun>
+Line 2, characters 59-60:
+2 | let f (x : nested_singleton @ contended) = use_uncontended x
+                                                               ^
+Error: This value is "contended" but is expected to be "uncontended".
 |}]

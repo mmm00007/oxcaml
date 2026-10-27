@@ -1116,12 +1116,9 @@ let label_mutability_contribution (type rep)
       (fun () -> "mutable fields")
       (Ldd.const Axis_lattice.mutable_data)
   | Unboxed_product, Mutable { atomic = Nonatomic; _ } ->
-    (* Unboxed record labels can't be mutated, so they are currently treated
-       like the [Immutable] (boxed or unboxed) case above.
-
-       CR box: Mutable unboxed products should cross like boxed mutable products
-       to soundly let [box] cross like [immutable_data]. *)
-    Ldd.bot
+    Solver.with_provenance_text ctx
+      (fun () -> "mutable fields")
+      (Ldd.const Axis_lattice.mutable_unboxed_label)
   | Unboxed_product, Mutable { atomic = Atomic; _ } ->
     Misc.fatal_error
       "Ikind.label_mutability_contribution: atomic label in an unboxed record"

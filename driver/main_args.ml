@@ -196,7 +196,6 @@ let mk_Ix f =
  \     (Like -I, but indicates that cmx files for modules in <dir> are\n\
  \     always available)"
 
-(* CR-soon zqian: we will remove -H soon. *)
 let mk_H f =
   "-H", Arg.String f,
   "<dir>  Add <dir> to the list of \"hidden\" include directories\n\
@@ -226,12 +225,12 @@ let mk_H_manifest f =
   "-H-manifest", Arg.String f, "<file>  Same as -I-manifest, but adds given\n\
   \    paths to the list of \"hidden\" files (see -H for more details)"
 
-let mk_H_line f =
-  "-H-line", Arg.String f, "<visible_path>:<actual_path>  Add a single\n\
+let mk_H_file f =
+  "-H-file", Arg.String f, "<visible_path>:<actual_path>  Add a single\n\
   \    file to the list of \"hidden\" files (see -H-manifest)"
 
-let mk_Hx_line f =
-  "-Hx-line", Arg.String f, "<visible_path>:<actual_path>  Same as -H-line,\n\
+let mk_Hx_file f =
+  "-Hx-file", Arg.String f, "<visible_path>:<actual_path>  Same as -H-file,\n\
   \    but indicates that the cmx file for the module is always available\n\
   \    (like -Ix)"
 
@@ -1198,8 +1197,8 @@ module type Common_options = sig
   val _H : string -> unit
   val _I_manifest : string -> unit
   val _H_manifest : string -> unit
-  val _H_line : string -> unit
-  val _Hx_line : string -> unit
+  val _H_file : string -> unit
+  val _Hx_file : string -> unit
   val _labels : unit -> unit
   val _alias_deps : unit -> unit
   val _no_alias_deps : unit -> unit
@@ -1578,8 +1577,8 @@ struct
     mk_H F._H;
     mk_I_manifest F._I_manifest;
     mk_H_manifest F._H_manifest;
-    mk_H_line F._H_line;
-    mk_Hx_line F._Hx_line;
+    mk_H_file F._H_file;
+    mk_Hx_file F._Hx_file;
     mk_impl F._impl;
     mk_instantiate_byt F._instantiate;
     mk_functorize F._functorize;
@@ -1718,8 +1717,8 @@ struct
     mk_H F._H;
     mk_I_manifest F._I_manifest;
     mk_H_manifest F._H_manifest;
-    mk_H_line F._H_line;
-    mk_Hx_line F._Hx_line;
+    mk_H_file F._H_file;
+    mk_Hx_file F._Hx_file;
     mk_init F._init;
     mk_labels F._labels;
     mk_alias_deps F._alias_deps;
@@ -1864,8 +1863,8 @@ struct
     mk_H F._H;
     mk_I_manifest F._I_manifest;
     mk_H_manifest F._H_manifest;
-    mk_H_line F._H_line;
-    mk_Hx_line F._Hx_line;
+    mk_H_file F._H_file;
+    mk_Hx_file F._Hx_file;
     mk_impl F._impl;
     mk_inline F._inline;
     mk_inline_toplevel F._inline_toplevel;
@@ -2053,8 +2052,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_H F._H;
     mk_I_manifest F._I_manifest;
     mk_H_manifest F._H_manifest;
-    mk_H_line F._H_line;
-    mk_Hx_line F._Hx_line;
+    mk_H_file F._H_file;
+    mk_Hx_file F._Hx_file;
     mk_init F._init;
     mk_inline F._inline;
     mk_inline_toplevel F._inline_toplevel;
@@ -2220,8 +2219,8 @@ struct
     mk_H F._H;
     mk_I_manifest F._I_manifest;
     mk_H_manifest F._H_manifest;
-    mk_H_line F._H_line;
-    mk_Hx_line F._Hx_line;
+    mk_H_file F._H_file;
+    mk_Hx_file F._Hx_file;
     mk_impl F._impl;
     mk_instantiate_byt F._instantiate;
     mk_functorize F._functorize;
@@ -2365,8 +2364,8 @@ struct
     mk_H F._H;
     mk_I_manifest F._I_manifest;
     mk_H_manifest F._H_manifest;
-    mk_H_line F._H_line;
-    mk_Hx_line F._Hx_line;
+    mk_H_file F._H_file;
+    mk_Hx_file F._Hx_file;
     mk_impl F._impl;
     mk_intf F._intf;
     mk_intf_suffix F._intf_suffix;
@@ -2547,8 +2546,8 @@ module Default = struct
       match Clflags.parse_hidden_include_file ~cmx_guaranteed entry with
       | Ok file -> hidden_include_files := file :: !hidden_include_files
       | Error msg -> raise (Arg.Bad msg)
-    let _H_line = add_hidden_include_file ~cmx_guaranteed:false
-    let _Hx_line = add_hidden_include_file ~cmx_guaranteed:true
+    let _H_file = add_hidden_include_file ~cmx_guaranteed:false
+    let _Hx_file = add_hidden_include_file ~cmx_guaranteed:true
     let _color = Misc.set_or_ignore color_reader.parse color
     let _dlambda = set dump_lambda
     let _dblambda = set dump_blambda
@@ -2878,8 +2877,8 @@ module Default = struct
       *) ()
     let _I_manifest(_:string) = ()
     let _H_manifest(_:string) = ()
-    let _H_line(_:string) = ()
-    let _Hx_line(_:string) = ()
+    let _H_file(_:string) = ()
+    let _Hx_file(_:string) = ()
     let _impl (_:string) =
       (* placeholder:
          Odoc_global.files := ((!Odoc_global.files) @ [Odoc_global.Impl_file s])

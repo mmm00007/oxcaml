@@ -70,10 +70,10 @@ compile "$@" -I-manifest manifest.txt \
   helper.$EXT mylib.$LIBEXT empty.$LIBEXT link_manifest.$EXT \
   -o link_manifest.exe
 
-# The same link, with one entry given via -H-line instead.
+# The same link, with one entry given via -H-file instead.
 grep -v "^file helper\.$EXT " manifest.txt > manifest_no_helper.txt
 compile "$@" -I-manifest manifest_no_helper.txt \
-  -H-line helper.$EXT:cas/blob_helper \
+  -H-file helper.$EXT:cas/blob_helper \
   helper.$EXT mylib.$LIBEXT empty.$LIBEXT link_manifest.$EXT \
   -o link_manifest_line.exe
 

@@ -847,8 +847,8 @@ let ocaml_ignored_parametrized_flags =
     "-dump-dir";
     "-I-manifest";
     "-H-manifest";
-    "-H-line";
-    "-Hx-line";
+    "-H-file";
+    "-Hx-file";
     (* flambda-backend specific *)
     "-extension";
     "-extension-universe";

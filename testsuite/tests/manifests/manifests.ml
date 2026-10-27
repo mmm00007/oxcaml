@@ -125,7 +125,7 @@ qux.cmi -> $PWD/manifests/04/qux (hidden)
 quux.cmi -> $PWD/manifests/04/quux (hidden)
 |}]
 
-(* Parsing of -H-line arguments *)
+(* Parsing of -H-file arguments *)
 let () =
   List.iter (fun entry ->
     match Clflags.parse_hidden_include_file ~cmx_guaranteed:false entry with
@@ -144,7 +144,7 @@ let () =
 "foo.cmi" -> Error: Expected '<visible_path>:<actual_path>', got: foo.cmi
 |}]
 
-(* -H-line and -Hx-line *)
+(* -H-file and -Hx-file *)
 let () =
   run_test ~hidden_include_files:[
     { Clflags.visible_path = "foo/foo.cmi"; actual_path = "00/foo"; cmx_guaranteed = false };
@@ -157,7 +157,7 @@ qux.cmi -> $PWD/manifests/04/qux (hidden)
 baz.cmi -> Not_found
 |}]
 
-(* -H-line takes precedence over -H-manifest *)
+(* -H-file takes precedence over -H-manifest *)
 let () =
   run_test ~hidden_include_manifests:[
     "03/03-manifest.txt";
@@ -169,7 +169,7 @@ let () =
 baz.cmi -> $PWD/manifests/04/quux (hidden)
 |}]
 
-(* The first -H-line flag takes precedence (the list is in reverse command-line
+(* The first -H-file flag takes precedence (the list is in reverse command-line
    order) *)
 let () =
   run_test ~hidden_include_files:[
